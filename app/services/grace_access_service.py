@@ -946,16 +946,12 @@ class GraceAccessService:
             if billing.remnawave_id == session.remnawave_id:
                 session = await self._remember_terminal_tariff_lineage(session, billing)
                 if session.state is GraceSessionState.COMPLETED:
-                    return (
-                        session.completion_reason or GraceCompletionReason.CONFLICT
-                    ).value
+                    return (session.completion_reason or GraceCompletionReason.CONFLICT).value
                 await self._panel.apply_billing_state(
                     billing,
                     expected_overlay=session.overlay,
                     expected_restored_snapshot=(
-                        session.panel_before
-                        if session.state is GraceSessionState.RESTORING
-                        else None
+                        session.panel_before if session.state is GraceSessionState.RESTORING else None
                     ),
                 )
                 await self._complete(session, GraceCompletionReason.CONFLICT)
@@ -1110,9 +1106,7 @@ class GraceAccessService:
         session = await self._store.save(
             replace(
                 session,
-                traffic_reset_started_at=(
-                    session.traffic_reset_started_at or session.updated_at
-                ),
+                traffic_reset_started_at=(session.traffic_reset_started_at or session.updated_at),
                 traffic_reset_finished_at=reset_finished_at,
                 updated_at=_as_utc(self._clock()),
             )
@@ -1146,9 +1140,7 @@ class GraceAccessService:
         )
         aliases = tuple(
             value
-            for value in dict.fromkeys(
-                (*session.incident_aliases, current_incident_key, lineage_key)
-            )
+            for value in dict.fromkeys((*session.incident_aliases, current_incident_key, lineage_key))
             if value != session.incident_key
         )
 
@@ -1247,9 +1239,7 @@ class GraceAccessService:
                     retain_traffic_reset_proof=True,
                 )
                 return GraceCompletionReason.REVOKED.value
-            raise GracePanelTransitionConflict(
-                'Remnawave user disappeared while the tariff reset target was changing'
-            )
+            raise GracePanelTransitionConflict('Remnawave user disappeared while the tariff reset target was changing')
         expected_source = traffic_reset_checkpoint_source_overlay(
             session,
             current_panel,
@@ -1258,9 +1248,7 @@ class GraceAccessService:
             now=now,
         )
         if expected_source is None:
-            raise GracePanelTransitionConflict(
-                'Remnawave changed outside the persisted tariff reset checkpoint'
-            )
+            raise GracePanelTransitionConflict('Remnawave changed outside the persisted tariff reset checkpoint')
 
         reset_generation_changed = not _reset_generations_equal(
             current_panel.last_traffic_reset_at,
@@ -1388,12 +1376,9 @@ class GraceAccessService:
         if session.reason is GraceReason.LIMITED:
             if not current_panel.traffic_is_known:
                 return None
-            subscription_is_unexpired = bool(
-                billing.end_at is not None and _as_utc(billing.end_at) > now
-            )
+            subscription_is_unexpired = bool(billing.end_at is not None and _as_utc(billing.end_at) > now)
             new_tariff_has_access = (
-                billing.traffic_limit_bytes == 0
-                or current_panel.used_traffic_bytes < billing.traffic_limit_bytes
+                billing.traffic_limit_bytes == 0 or current_panel.used_traffic_bytes < billing.traffic_limit_bytes
             )
             if subscription_is_unexpired and new_tariff_has_access:
                 # The database status can remain LIMITED until Remnawave echoes
@@ -1409,10 +1394,7 @@ class GraceAccessService:
                     )
                     recovering_session = await self._store.save(recovering_session)
                     if recovering_session.state is GraceSessionState.COMPLETED:
-                        return (
-                            recovering_session.completion_reason
-                            or GraceCompletionReason.CONFLICT
-                        ).value
+                        return (recovering_session.completion_reason or GraceCompletionReason.CONFLICT).value
 
                     # Saving the webhook marker is an intentional durable
                     # checkpoint and therefore releases/reacquires the database
@@ -1451,9 +1433,7 @@ class GraceAccessService:
                             return 'unchanged'
 
                     completion_reason = (
-                        GraceCompletionReason.REVOKED
-                        if fresh_billing is None
-                        else GraceCompletionReason.CONFLICT
+                        GraceCompletionReason.REVOKED if fresh_billing is None else GraceCompletionReason.CONFLICT
                     )
                     action, _ = await self._restore_and_complete(
                         checkpoint_session,
@@ -1580,9 +1560,8 @@ class GraceAccessService:
         session: GraceAccessSession,
         billing: GraceBillingState,
     ) -> GraceAccessSession:
-        if (
-            session.reason is not GraceReason.LIMITED
-            or not tariff_change_matches_incident_family(session, billing, self._policy)
+        if session.reason is not GraceReason.LIMITED or not tariff_change_matches_incident_family(
+            session, billing, self._policy
         ):
             return session
         current_incident_key = build_incident_key(
@@ -1595,11 +1574,7 @@ class GraceAccessService:
             session.reason,
             last_traffic_reset_at=session.panel_before.last_traffic_reset_at,
         )
-        aliases = tuple(
-            dict.fromkeys(
-                (*session.incident_aliases, current_incident_key, lineage_key)
-            )
-        )
+        aliases = tuple(dict.fromkeys((*session.incident_aliases, current_incident_key, lineage_key)))
         updated = replace(
             session,
             incident_aliases=aliases,
@@ -1683,8 +1658,7 @@ class GraceAccessService:
     ) -> GraceAccessSession:
         now = _as_utc(self._clock())
         has_applied_fence_proof = (
-            session.traffic_reset_target is None
-            and session.traffic_reset_remaining_bytes is not None
+            session.traffic_reset_target is None and session.traffic_reset_remaining_bytes is not None
         )
         retain_reset_proof = retain_traffic_reset_proof or has_applied_fence_proof
         completed_session = replace(
@@ -1696,19 +1670,11 @@ class GraceAccessService:
             last_error=last_error,
             allow_recovery_enabled_webhook=False,
             traffic_reset_target=(session.traffic_reset_target if retain_reset_proof else None),
-            traffic_reset_remaining_bytes=(
-                session.traffic_reset_remaining_bytes if retain_reset_proof else None
-            ),
+            traffic_reset_remaining_bytes=(session.traffic_reset_remaining_bytes if retain_reset_proof else None),
             traffic_reset_started_at=(
-                (session.traffic_reset_started_at or session.updated_at)
-                if retain_reset_proof
-                else None
+                (session.traffic_reset_started_at or session.updated_at) if retain_reset_proof else None
             ),
-            traffic_reset_finished_at=(
-                session.traffic_reset_finished_at
-                if retain_reset_proof
-                else None
-            ),
+            traffic_reset_finished_at=(session.traffic_reset_finished_at if retain_reset_proof else None),
         )
         return await self._store.save(completed_session)
 
@@ -1793,9 +1759,8 @@ def tariff_rebase_lineage_blocks_new_grant(
     # so it compares above every finite quota rather than below it.
     current_limit = current.traffic_limit_bytes
     previous_limit = before.traffic_limit_bytes
-    strictly_larger = (
-        (current_limit == 0 and previous_limit != 0)
-        or (current_limit != 0 and previous_limit != 0 and current_limit > previous_limit)
+    strictly_larger = (current_limit == 0 and previous_limit != 0) or (
+        current_limit != 0 and previous_limit != 0 and current_limit > previous_limit
     )
     return not strictly_larger
 
@@ -1971,11 +1936,7 @@ def billing_still_matches_session(
         return False
     if not _datetimes_equal(current.end_at, before.end_at):
         return False
-    tariff_matches = (
-        not before.tariff_id_known
-        or not current.tariff_id_known
-        or current.tariff_id == before.tariff_id
-    )
+    tariff_matches = not before.tariff_id_known or not current.tariff_id_known or current.tariff_id == before.tariff_id
     return (
         current.traffic_limit_bytes == before.traffic_limit_bytes
         and current.device_limit == before.device_limit
@@ -2450,28 +2411,21 @@ def webhook_matches_traffic_reset_signal(
             return False
 
     squads_present, raw_squads = _webhook_payload_value(payload, 'activeInternalSquads')
-    if squads_present and set(_extract_squad_uuids(raw_squads)) != set(
-        session.overlay.squad_uuids
-    ):
+    if squads_present and set(_extract_squad_uuids(raw_squads)) != set(session.overlay.squad_uuids):
         return False
 
     external_present, external_squad_uuid = _webhook_payload_value(
         payload,
         'externalSquadUuid',
     )
-    return not external_present or (
-        external_squad_uuid == session.overlay.external_squad_uuid
-    )
+    return not external_present or (external_squad_uuid == session.overlay.external_squad_uuid)
 
 
 def _traffic_reset_webhook_identity_matches(
     payload: Mapping[str, Any],
     session: GraceAccessSession,
 ) -> bool:
-    if (
-        session.state is not GraceSessionState.COMPLETED
-        or session.traffic_reset_remaining_bytes is None
-    ):
+    if session.state is not GraceSessionState.COMPLETED or session.traffic_reset_remaining_bytes is None:
         return False
     id_present, payload_id = _webhook_payload_value(payload, 'id')
     try:
@@ -2540,14 +2494,8 @@ def _traffic_reset_echo_timestamp_matches(
         or session.traffic_reset_finished_at is None
     ):
         return False
-    lower_bound = (
-        _as_utc(session.traffic_reset_started_at)
-        - _RESTORE_ECHO_TIMESTAMP_TOLERANCE
-    )
-    upper_bound = (
-        _as_utc(session.traffic_reset_finished_at)
-        + _RESTORE_ECHO_TIMESTAMP_TOLERANCE
-    )
+    lower_bound = _as_utc(session.traffic_reset_started_at) - _RESTORE_ECHO_TIMESTAMP_TOLERANCE
+    upper_bound = _as_utc(session.traffic_reset_finished_at) + _RESTORE_ECHO_TIMESTAMP_TOLERANCE
     normalized_updated_at = _as_utc(panel_updated_at)
     return lower_bound <= normalized_updated_at <= upper_bound
 
