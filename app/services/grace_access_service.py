@@ -1279,6 +1279,7 @@ class GraceAccessService:
             used_traffic_bytes=reset_result.panel.used_traffic_bytes,
             squad_uuids=target.squad_uuids,
             external_squad_uuid=target.external_squad_uuid,
+            traffic_limit_strategy=target.traffic_limit_strategy,
             last_traffic_reset_at=reset_result.panel.last_traffic_reset_at,
         )
         continued_overlay = replace(
@@ -1573,6 +1574,7 @@ class GraceAccessService:
             used_traffic_bytes=current_panel.used_traffic_bytes,
             squad_uuids=billing.squad_uuids,
             external_squad_uuid=billing.external_squad_uuid,
+            traffic_limit_strategy=billing.traffic_limit_strategy,
         )
         rebased = replace(
             session,
