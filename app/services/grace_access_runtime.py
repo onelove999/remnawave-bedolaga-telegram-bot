@@ -2311,6 +2311,13 @@ async def collect_grace_status(db: AsyncSession, *, error_limit: int = 20) -> di
 
 async def _acquire_database_lock(db: AsyncSession, subscription_id: int) -> None:
     bind = db.get_bind()
+    if bind.dialect.name == 'sqlite':
+        # SQLite has no advisory locks. A harmless UPDATE acquires the
+        # transaction's writer lock and is repeated after durable checkpoints.
+        await db.execute(
+            update(Subscription).where(Subscription.id == subscription_id).values(updated_at=Subscription.updated_at)
+        )
+        return
     if bind.dialect.name != 'postgresql':
         return
     await db.execute(
