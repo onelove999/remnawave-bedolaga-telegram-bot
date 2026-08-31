@@ -3384,6 +3384,7 @@ async def test_grace_external_squad_policy_options() -> None:
     billing = make_billing(status='expired', end_at=now)
     snapshot = replace(
         make_snapshot(expire_at=now),
+        status='EXPIRED',
         external_squad_uuid='original-ext-squad-uuid',
     )
 
@@ -3428,7 +3429,11 @@ async def test_grace_external_squad_policy_options() -> None:
     # 4. 'keep' при отсутствующем внешнем скваде: сохранять нечего.
     service_keep_empty, _, panel_keep_empty, _ = make_service(
         billing=billing,
-        snapshot=replace(make_snapshot(expire_at=now), external_squad_uuid=None),
+        snapshot=replace(
+            make_snapshot(expire_at=now),
+            status='EXPIRED',
+            external_squad_uuid=None,
+        ),
         clock=clock,
         policy=make_policy(external_squad_uuid='keep'),
     )

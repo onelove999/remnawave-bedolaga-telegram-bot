@@ -1,15 +1,15 @@
 """require positive numeric identity for Grace sessions
 
-Revision ID: 0105
-Revises: 0104
+Revision ID: 0111
+Revises: 0110
 """
 
 import sqlalchemy as sa
 from alembic import op
 
 
-revision = '0105'
-down_revision = '0104'
+revision = '0111'
+down_revision = '0110'
 branch_labels = None
 depends_on = None
 
@@ -34,7 +34,8 @@ def upgrade() -> None:
     columns = _columns(inspector, 'grace_access_sessions')
     if 'remnawave_id' not in columns:
         raise RuntimeError(
-            '0105 requires 0104 first: grace_access_sessions.remnawave_id is missing. '
+            '0111 requires numeric-id migration 0104 first: '
+            'grace_access_sessions.remnawave_id is missing. '
             'Run alembic upgrade 0104 before retrying.'
         )
 
@@ -45,7 +46,7 @@ def upgrade() -> None:
         raise RuntimeError(
             f'{invalid} Grace session row(s) have NULL or non-positive remnawave_id. '
             'Run "make backfill-remnawave-ids" to inspect, then '
-            '"make backfill-remnawave-ids-apply" and retry migration 0105.'
+            '"make backfill-remnawave-ids-apply" and retry migration 0111.'
         )
 
     if _CHECK_NAME not in _check_names(inspector, 'grace_access_sessions'):
